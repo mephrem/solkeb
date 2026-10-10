@@ -75,6 +75,7 @@ class ReservationController extends Controller
 
     public function show(Reservation $reservation, RoomMoveService $moves)
     {
+        $this->reservations->catchUpOverstay($reservation); // nights stayed past the booked date go on the bill
         $reservation->load(['guest', 'organization', 'rooms.roomType', 'charges.creator', 'payments.receiver', 'payments.account',
             'creator', 'checkedInBy', 'checkedOutBy', 'cancelledBy', 'activities.user']);
 
@@ -219,6 +220,7 @@ class ReservationController extends Controller
     /** Printable bill / invoice for the guest. */
     public function invoice(Reservation $reservation)
     {
+        $this->reservations->catchUpOverstay($reservation);
         $reservation->load(['guest', 'organization', 'rooms.roomType', 'charges', 'payments.account']);
 
         return view('reservations.invoice', ['r' => $reservation] + $this->totals($reservation));
@@ -227,6 +229,7 @@ class ReservationController extends Controller
     /** Printable invoice addressed to the organisation, for a stay it pays for later. */
     public function creditInvoice(Reservation $reservation)
     {
+        $this->reservations->catchUpOverstay($reservation);
         abort_unless($reservation->billedOnCredit(), 404);
         $reservation->load(['guest', 'organization', 'rooms.roomType', 'charges', 'payments.account']);
 

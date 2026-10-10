@@ -15,7 +15,11 @@
             @if ($r->departureLabel())<span class="badge b-due" style="vertical-align:middle">{{ $r->departureLabel() }}</span>@endif</h1>
         <div class="muted">
             {{ $r->check_in_date->format('D d M Y') }} → {{ $r->check_out_date->format('D d M Y') }} ·
-            {{ $r->nights() }} night{{ $r->nights() == 1 ? '' : 's' }} ·
+            @if ($r->departureState() === 'overdue')
+                <strong class="owe">{{ $r->nightsSoFar() }} nights so far</strong> (booked {{ $r->nights() }}) ·
+            @else
+                {{ $r->nights() }} night{{ $r->nights() == 1 ? '' : 's' }} ·
+            @endif
             {{ $r->adults }} adult{{ $r->adults == 1 ? '' : 's' }}@if ($r->children), {{ $r->children }} child{{ $r->children == 1 ? '' : 'ren' }}@endif
             @if ($r->organization) · <a href="{{ route('organizations.show', $r->organization) }}">{{ $r->organization->name }}</a>{{ $r->on_credit ? ' (on credit)' : '' }}@endif
         </div>

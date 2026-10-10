@@ -242,6 +242,50 @@ class ReservationService
     }
 
     /**
+     * A guest still in house after the booked check-out date, without the stay being extended: the nights
+     * actually stayed are put on the bill, so the bill, the balance and the payments agree (otherwise paying
+     * for the real stay shows as credit). The booked check-out date is kept, so the booking still shows as
+     * overdue. A half-day extension from the check-out day is replaced by the full night.
+     * Safe to call any time: it only changes something when a new night has passed.
+     *
+     * @return int nights added to the bill (0 when it was already up to date)
+     */
+    public function catchUpOverstay(Reservation $reservation): int
+    {
+        if ($reservation->status !== Reservation::CHECKED_IN || ! $reservation->check_out_date->isBefore(today())) {
+            return 0;
+        }
+
+        $nights = $reservation->nightsSoFar();
+        $billed = $this->billedNights($reservation);
+        if ($billed >= $nights) {
+            return 0;
+        }
+
+        DB::transaction(function () use ($reservation, $nights, $billed) {
+            $halfDays = $reservation->charges()->where('type', 'half_day')->get();
+            $halfDays->each->delete();
+            $this->rebillRoomNights($reservation, $nights);
+
+            $extra = $nights - $billed;
+            Activity::log($reservation, 'edited', "Stayed past the booked check-out date ({$reservation->check_out_date->format('d M')}): "
+                ."{$extra} night".($extra === 1 ? '' : 's')." added, {$nights} nights on the bill"
+                .($halfDays->isNotEmpty() ? '; half-day extension replaced by the full night' : ''));
+        });
+
+        return $nights - $billed;
+    }
+
+    /** Nights the bill currently covers for the rooms the guest is in (the furthest point any room line reaches). */
+    private function billedNights(Reservation $reservation): int
+    {
+        $current = $reservation->rooms()->pluck('rooms.id');
+
+        return (int) $reservation->charges()->where('type', 'room')->whereIn('room_id', $current)->get()
+            ->max(fn ($line) => (int) $line->nights_before + (int) $line->quantity);
+    }
+
+    /**
      * Re-count the room nights on the bill for a stay of $nights. Only the parts still running change:
      * the nights a guest spent in a room they moved out of stay as they were.
      */

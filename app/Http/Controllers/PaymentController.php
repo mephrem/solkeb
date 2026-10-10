@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePaymentRequest;
 use App\Models\Reservation;
+use App\Services\Booking\ReservationService;
 use App\Services\Payments\PaymentRecorder;
 
 /** Money received on a booking (or given back, for managers and accountants). */
 class PaymentController extends Controller
 {
-    public function store(StorePaymentRequest $request, Reservation $reservation, PaymentRecorder $payments)
+    public function store(StorePaymentRequest $request, Reservation $reservation, PaymentRecorder $payments, ReservationService $reservations)
     {
+        // A guest who stayed past the booked date pays for the nights actually stayed: bring the bill up to date first
+        $reservations->catchUpOverstay($reservation);
+
         // Which account the money went into (or came out of, for a refund), and its transaction number
         [$method, $account] = $payments->channel($request->receivedInto(), $request->validated('method'), 'received_into');
         $payments->requireReference($method, $account, $request->validated('reference'), 'reference');
