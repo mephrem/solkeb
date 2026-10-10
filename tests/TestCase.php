@@ -3,12 +3,16 @@
 namespace Tests;
 
 use App\Models\Reservation;
+use Database\Seeders\TestingSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Tests start from fixed test rooms (101–306), not the hotel's real rooms. */
+    protected $seeder = TestingSeeder::class;
+
     protected function setUp(): void
     {
         parent::setUp();
