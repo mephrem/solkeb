@@ -12,6 +12,13 @@ class TestingSeeder extends Seeder
 {
     public function run(): void
     {
+        // Never on the live system: training / demo data only
+        if (app()->environment('production')) {
+            $this->command?->error('Test data is for training and testing only. It does not run on a production installation (APP_ENV=production).');
+
+            return;
+        }
+
         DatabaseSeeder::createAdmin();
 
         $this->call([

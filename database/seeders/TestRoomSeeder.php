@@ -14,6 +14,13 @@ class TestRoomSeeder extends Seeder
 {
     public function run(): void
     {
+        // Never on the live system: training / demo data only
+        if (app()->environment('production')) {
+            $this->command?->error('The test rooms are for testing only. They are not added on a production installation (APP_ENV=production).');
+
+            return;
+        }
+
         $types = [
             'Standard' => ['rate' => 1500, 'adults' => 2, 'children' => 1],
             'Twin' => ['rate' => 1800, 'adults' => 2, 'children' => 0],

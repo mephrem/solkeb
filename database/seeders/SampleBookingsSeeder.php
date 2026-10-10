@@ -42,6 +42,13 @@ class SampleBookingsSeeder extends Seeder
 
     public function run(): void
     {
+        // Never on the live system: training / demo data only
+        if (app()->environment('production')) {
+            $this->command?->error('Sample data is for training and testing only. It does not run on a production installation (APP_ENV=production).');
+
+            return;
+        }
+
         if (Reservation::withTrashed()->exists()
             && ! $this->command->confirm('This removes all existing bookings, guests and payments and creates sample ones. Continue?', false)) {
             $this->command->warn('Nothing changed.');
