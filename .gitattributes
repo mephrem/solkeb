@@ -9,3 +9,6 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Windows scripts keep Windows line endings
+*.bat text eol=crlf

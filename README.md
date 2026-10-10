@@ -101,10 +101,14 @@ tests/Feature/                      One file per feature area
 
 ## Deploying
 
-- Set `APP_ENV=production`, `APP_DEBUG=false` and a real `APP_URL` in `.env`.
-- Run `php artisan migrate --force`, then `php artisan optimize`.
-- **Back up the database and `storage/app/private`** (guest ID photos) regularly. Neither is in git.
-- SweetAlert2 is optional: see `public/vendor/sweetalert2/README.txt`.
+Installing on the hotel PC (starts automatically at boot, nightly backups, updates): see
+**[deploy/DEPLOY.md](deploy/DEPLOY.md)** and the scripts beside it:
+
+| Script | What it does |
+|---|---|
+| `deploy/install-services.bat` | Once, as administrator: MySQL + Apache as Windows services, default site, firewall, nightly backup task |
+| `deploy/backup.bat` | Database, guests' ID photos and `.env` into a dated folder (keeps 30 days) |
+| `deploy/update.bat` | Backup, `git pull`, `composer install`, `migrate`, refresh caches |
 
 ## Git notes
 
