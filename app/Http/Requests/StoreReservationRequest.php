@@ -6,6 +6,7 @@ use App\Http\Requests\Concerns\ChoosesBillTo;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Setting;
+use App\Rules\PhoneNumber;
 use App\Services\Payments\PaymentRecorder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -20,6 +21,9 @@ class StoreReservationRequest extends FormRequest
     {
         if ($this->has('guest.tin')) {
             $this->merge(['guest' => array_merge($this->input('guest', []), ['tin' => GuestRequest::cleanTin($this->input('guest.tin'))])]);
+        }
+        if ($this->has('guest.phone')) {
+            $this->merge(['guest' => array_merge($this->input('guest', []), ['phone' => PhoneNumber::normalize($this->input('guest.phone'))])]);
         }
     }
 

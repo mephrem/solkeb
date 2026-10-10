@@ -27,6 +27,11 @@
             <div class="field"><label>Check-out time *</label><input type="text" name="check_out_time" value="{{ old('check_out_time', $values['check_out_time']) }}" placeholder="12:00" required></div>
             <div class="field"><label>Booking code prefix *</label><input type="text" name="booking_prefix" value="{{ old('booking_prefix', $values['booking_prefix']) }}" maxlength="6" required></div>
         </div>
+        <div class="fields">
+            <div class="field"><label>Half-day extension until</label><input type="text" name="half_day_until" value="{{ old('half_day_until', $values['half_day_until'] ?: '14:30') }}" placeholder="14:30"></div>
+            <div class="field"><label>Half-day price (% of the night)</label><input type="number" step="1" min="0" max="100" name="half_day_percent" value="{{ old('half_day_percent', $values['half_day_percent'] ?: 50) }}"></div>
+        </div>
+        <p class="small muted" style="margin-top:0">A guest leaving after the check-out time can stay until the half-day time for this share of one night's price.</p>
         <p class="small muted" style="margin-top:0">Prices are treated as VAT-inclusive; the bill shows how much of the total is VAT.</p>
         <div class="field"><label>Message at the bottom of printed bills</label><input type="text" name="invoice_footer" value="{{ old('invoice_footer', $values['invoice_footer']) }}" placeholder="Thank you for staying with us."></div>
         <div class="field"><label class="check"><input type="checkbox" name="take_deposits" value="1" @checked(old('take_deposits', $values['take_deposits']))> Take a deposit (advance payment) when booking</label>

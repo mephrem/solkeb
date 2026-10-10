@@ -101,11 +101,52 @@ class Reservation extends Model
     /** "Leaves today" / "Overdue 2 days" */
     public function departureLabel(): ?string
     {
-        return match ($this->departureState()) {
-            'today' => 'Leaves today',
-            'overdue' => 'Overdue '.($d = (int) $this->check_out_date->diffInDays(today())).' day'.($d === 1 ? '' : 's'),
-            default => null,
-        };
+        if ($this->departureState() === 'today') {
+            $now = now()->format('H:i');
+            if ($this->hasHalfDay()) {
+                return $now <= self::halfDayUntil() ? 'Leaves by '.self::halfDayUntil().' (half day)' : 'Half day ended '.self::halfDayUntil();
+            }
+
+            return $now > self::checkOutTime() ? 'Check-out time passed ('.self::checkOutTime().')' : 'Leaves today';
+        }
+
+        return $this->departureState() === 'overdue'
+            ? 'Overdue '.($d = (int) $this->check_out_date->diffInDays(today())).' day'.($d === 1 ? '' : 's')
+            : null;
+    }
+
+    /** The hotel's check-out time (Hotel settings), e.g. "11:00". */
+    public static function checkOutTime(): string
+    {
+        return Setting::get('check_out_time') ?: '11:00';
+    }
+
+    /** Until when a half-day extension lets the guest stay on the check-out day, e.g. "14:30". */
+    public static function halfDayUntil(): string
+    {
+        return Setting::get('half_day_until') ?: '14:30';
+    }
+
+    /** Share of one night's price charged for a half-day extension (percent). */
+    public static function halfDayPercent(): float
+    {
+        $p = Setting::get('half_day_percent');
+
+        return $p === null || $p === '' ? 50.0 : (float) $p;
+    }
+
+    /** Ids of the rooms that already have a half-day extension on this bill. */
+    public function halfDayRoomIds()
+    {
+        return $this->charges()->where('type', 'half_day')->pluck('room_id');
+    }
+
+    /** Every room on the booking has a half-day extension. */
+    public function hasHalfDay(): bool
+    {
+        $rooms = $this->relationLoaded('rooms') ? $this->rooms->pluck('id') : $this->rooms()->pluck('rooms.id');
+
+        return $rooms->isNotEmpty() && $rooms->diff($this->halfDayRoomIds())->isEmpty();
     }
 
     /** Give a credit stay its invoice number when the guest leaves: CI-2026-0001 */
@@ -261,9 +302,24 @@ class Reservation extends Model
         }
         $nights = $this->nightsSoFar();
         $rooms = $this->charges()->where('type', 'room')->get();
-        $roomNow = $rooms->sum(fn ($c) => round($nights * (float) $c->unit_price, 2));
+        $roomNow = $rooms->sum(fn ($c) => round($this->roomLineNights($c, $nights) * (float) $c->unit_price, 2));
 
         return round($this->totalCharges() - (float) $rooms->sum('amount') + $roomNow - $this->totalPaid(), 2);
+    }
+
+    /**
+     * How many nights a room line covers when the whole stay is $stayNights long.
+     *
+     * A line for a room the guest has moved out of is finished and keeps its nights. A line for a room
+     * still on the booking runs to the end of the stay: the stay's nights minus those billed before it.
+     */
+    public function roomLineNights(Charge $line, int $stayNights): int
+    {
+        $current = $this->relationLoaded('rooms') ? $this->rooms->pluck('id') : $this->rooms()->pluck('rooms.id');
+
+        return $current->contains($line->room_id)
+            ? max(0, $stayNights - (int) $line->nights_before)
+            : (int) $line->quantity;
     }
 
     public function balance(): float

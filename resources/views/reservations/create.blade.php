@@ -59,7 +59,7 @@
                         <div class="field"><label>Father's name</label><input type="text" name="guest[father_name]" value="{{ old('guest.father_name') }}"></div>
                     </div>
                     <div class="fields">
-                        <div class="field"><label>Phone *</label><input type="tel" name="guest[phone]" value="{{ old('guest.phone') }}" placeholder="09..." required></div>
+                        <div class="field"><label>Phone *</label><input type="tel" name="guest[phone]" value="{{ old('guest.phone') }}" placeholder="0911223344 or +252…" required></div>
                         <div class="field"><label>Gender</label>
                             <select name="guest[gender]"><option value="">—</option>
                                 <option value="male" @selected(old('guest.gender') === 'male')>Male</option>

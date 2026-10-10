@@ -10,7 +10,7 @@
         <div class="field"><label>Father's name</label><input type="text" name="father_name" value="{{ old('father_name', $guest->father_name) }}"></div>
     </div>
     <div class="fields">
-        <div class="field"><label>Phone *</label><input type="tel" name="phone" value="{{ old('phone', $guest->phone) }}" required></div>
+        <div class="field"><label>Phone *</label><input type="tel" name="phone" value="{{ old('phone', $guest->phone) }}" placeholder="0911223344 or +252…" required></div>
         <div class="field"><label>Email</label><input type="email" name="email" value="{{ old('email', $guest->email) }}"></div>
         <div class="field"><label>Gender</label>
             <select name="gender"><option value="">—</option>

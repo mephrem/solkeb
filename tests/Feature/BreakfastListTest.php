@@ -19,7 +19,7 @@ class BreakfastListTest extends TestCase
         $this->post('/reservations', [
             'check_in_date' => today()->toDateString(), 'check_out_date' => today()->addDays($nights)->toDateString(),
             'rooms' => [Room::where('number', $room)->value('id')], 'adults' => $adults, 'children' => $children, 'source' => 'walk_in',
-            'guest' => ['first_name' => $name, 'phone' => '09110'.$room],
+            'guest' => ['first_name' => $name, 'phone' => '09110'.$room.'00'],
         ])->assertSessionHasNoErrors();
 
         return Reservation::latest('id')->first();

@@ -7,9 +7,9 @@
     <link rel="icon" type="image/png" href="{{ asset('images/solkeb-icon-64.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/solkeb-icon-180.png') }}">
     <title>@yield('title', 'Dashboard') · {{ \App\Models\Setting::get('hotel_name', 'Solkeb Hotel') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=14">
+    <link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=17">
     <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}" defer></script>
-    <script src="{{ asset('js/solkeb.js') }}?v=9" defer></script>
+    <script src="{{ asset('js/solkeb.js') }}?v=11" defer></script>
     <script src="{{ asset('js/datatable.js') }}?v=6" defer></script>
 </head>
 <body>
@@ -27,10 +27,10 @@
 @endphp
 <div class="topbar">
     <img src="{{ asset('images/solkeb-logo-white.png') }}" alt="{{ \App\Models\Setting::get('hotel_name', 'Solkeb Hotel') }}" height="26" style="height:26px;width:auto">
-    <button type="button" onclick="document.querySelector('.sidebar').classList.toggle('open')">Menu</button>
+    <button type="button" data-menu-toggle aria-controls="sidebar" aria-expanded="false">Menu</button>
 </div>
 <div class="app">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="brand">
             <a href="{{ route('dashboard') }}" class="brand-logo"><img src="{{ asset('images/solkeb-logo-white.png') }}" alt="{{ \App\Models\Setting::get('hotel_name', 'Solkeb Hotel') }}" width="192" height="36"></a>
             <div class="brand-tagline">{{ \App\Models\Setting::get('tagline', 'Peaceful and Comfortable!') }}</div>

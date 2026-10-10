@@ -100,6 +100,14 @@ class ReservationService
             ]);
 
             if ($inHouse) {
+                // Staying another night instead of leaving this afternoon: the full night replaces the half day
+                if ($reservation->check_out_date->isAfter(today())) {
+                    $halfDays = $reservation->charges()->where('type', 'half_day')->get();
+                    if ($halfDays->isNotEmpty()) {
+                        $halfDays->each->delete();
+                        Activity::log($reservation, 'charge_removed', 'Half-day extension: the stay was extended instead', $halfDays->sum('amount'));
+                    }
+                }
                 // Longer or shorter stay: re-bill the room nights
                 $this->rebillRoomNights($reservation, $reservation->fresh()->nights());
             } else {
@@ -115,6 +123,54 @@ class ReservationService
 
             $reservation->refresh();
             Activity::log($reservation, 'edited', 'Room '.$this->roomNumbers($reservation).', '.$this->dates($reservation));
+        });
+    }
+
+    /**
+     * Late check-out on the check-out day: the guest keeps the room until the half-day time (Hotel settings,
+     * default 14:30) for a share of one night's price (default 50%), per room.
+     *
+     * @param  int[]  $roomIds  rooms getting the extension (empty = every room on the booking)
+     * @return float the amount added to the bill
+     *
+     * @throws BookingException when the guest is not leaving today, or every chosen room already has one
+     */
+    public function addHalfDay(Reservation $reservation, array $roomIds, User $by): float
+    {
+        if ($reservation->status !== Reservation::CHECKED_IN || ! $reservation->check_out_date->isToday()) {
+            throw new BookingException('A half-day extension is only for a guest who is checking out today. To stay longer, use Extend / change stay.');
+        }
+
+        $already = $reservation->halfDayRoomIds();
+        $rooms = $reservation->rooms()->with('roomType')->get()
+            ->filter(fn ($room) => empty($roomIds) || in_array($room->id, $roomIds))
+            ->reject(fn ($room) => $already->contains($room->id));
+        if ($rooms->isEmpty()) {
+            throw new BookingException('The half-day extension is already on the bill.');
+        }
+
+        $until = Reservation::halfDayUntil();
+        $percent = Reservation::halfDayPercent();
+
+        return DB::transaction(function () use ($reservation, $rooms, $until, $percent, $by) {
+            $total = 0.0;
+            foreach ($rooms as $room) {
+                $price = round((float) $room->pivot->nightly_rate * $percent / 100, 2);
+                $reservation->charges()->create([
+                    'room_id' => $room->id,
+                    'type' => 'half_day',
+                    'description' => "Half-day extension · Room {$room->number} (until {$until})",
+                    'quantity' => 1,
+                    'unit_price' => $price,
+                    'amount' => $price,
+                    'charge_date' => today(),
+                    'created_by' => $by->id,
+                ]);
+                $total += $price;
+            }
+            Activity::log($reservation, 'half_day', 'Room '.$rooms->pluck('number')->join(', ')." until {$until} · ".rtrim(rtrim(number_format($percent, 2), '0'), '.').'% of the night', $total);
+
+            return $total;
         });
     }
 
@@ -185,11 +241,16 @@ class ReservationService
         });
     }
 
-    /** Set the room lines on the bill to this many nights. */
+    /**
+     * Re-count the room nights on the bill for a stay of $nights. Only the parts still running change:
+     * the nights a guest spent in a room they moved out of stay as they were.
+     */
     public function rebillRoomNights(Reservation $reservation, int $nights): void
     {
+        $reservation->unsetRelation('rooms');
         foreach ($reservation->charges()->where('type', 'room')->get() as $charge) {
-            $charge->update(['quantity' => $nights, 'amount' => round($nights * $charge->unit_price, 2)]);
+            $quantity = $reservation->roomLineNights($charge, $nights);
+            $charge->update(['quantity' => $quantity, 'amount' => round($quantity * $charge->unit_price, 2)]);
         }
     }
 

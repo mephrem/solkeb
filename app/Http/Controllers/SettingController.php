@@ -23,6 +23,8 @@ class SettingController extends Controller
         'vat_percent' => ['required', 'numeric', 'min:0', 'max:100'],
         'check_in_time' => ['required', 'date_format:H:i'],
         'check_out_time' => ['required', 'date_format:H:i'],
+        'half_day_until' => ['nullable', 'date_format:H:i'],               // late check-out ends (default 14:30)
+        'half_day_percent' => ['nullable', 'numeric', 'min:0', 'max:100'], // share of the night charged (default 50)
         'booking_prefix' => ['required', 'alpha_num', 'max:6'],
         'invoice_footer' => ['nullable', 'string', 'max:300'],
         'take_deposits' => ['nullable', 'boolean'], // off: guests pay during the stay or at check-out, nothing at booking

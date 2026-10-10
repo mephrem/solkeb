@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" href="{{ asset('images/solkeb-icon-64.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/solkeb-icon-180.png') }}">
     <title>Log in · {{ \App\Models\Setting::get('hotel_name', 'Solkeb Hotel') }}</title>
-    <link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=14">
+    <link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=17">
 </head>
 <body>
 <div class="login-page">

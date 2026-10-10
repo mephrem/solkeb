@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckInRequest;
+use App\Http\Requests\MoveRoomRequest;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\UpdateReservationRequest;
 use App\Models\Charge;
@@ -15,6 +16,7 @@ use App\Models\Setting;
 use App\Services\Booking\CheckInService;
 use App\Services\Booking\CheckOutService;
 use App\Services\Booking\ReservationService;
+use App\Services\Booking\RoomMoveService;
 use App\Services\Payments\PaymentRecorder;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -71,7 +73,7 @@ class ReservationController extends Controller
         return redirect()->route('reservations.show', $reservation)->with('success', "Booking {$reservation->code} created.");
     }
 
-    public function show(Reservation $reservation)
+    public function show(Reservation $reservation, RoomMoveService $moves)
     {
         $reservation->load(['guest', 'organization', 'rooms.roomType', 'charges.creator', 'payments.receiver', 'payments.account',
             'creator', 'checkedInBy', 'checkedOutBy', 'cancelledBy', 'activities.user']);
@@ -83,6 +85,7 @@ class ReservationController extends Controller
             'balance' => $reservation->balance(),
             'dueToday' => $reservation->dueIfLeavingToday(),
             'occupants' => $this->occupants($reservation),
+            'moveTo' => $moves->freeRooms($reservation), // rooms an in-house guest can move into
         ]);
     }
 
@@ -147,6 +150,25 @@ class ReservationController extends Controller
         }
 
         return back()->with('success', 'Guest checked out. The room is marked "Needs cleaning".');
+    }
+
+    /** Room shifting: move an in-house guest from one of the booking's rooms to another room. */
+    public function moveRoom(MoveRoomRequest $request, Reservation $reservation, Room $room, RoomMoveService $moves)
+    {
+        $to = Room::findOrFail($request->validated('to_room_id'));
+        $moves->move($reservation, $room, $to, $request->boolean('keep_price'), $request->validated('reason'), $request->user());
+
+        return back()->with('success', "Moved from room {$room->number} to room {$to->number}. Room {$room->number} is marked \"Needs cleaning\".");
+    }
+
+    /** Late check-out: stay until the half-day time on the check-out day for part of a night's price. */
+    public function halfDay(Request $request, Reservation $reservation)
+    {
+        $data = $request->validate(['rooms' => ['nullable', 'array'], 'rooms.*' => ['integer']]);
+        $amount = $this->reservations->addHalfDay($reservation, array_map('intval', $data['rooms'] ?? []), $request->user());
+
+        return back()->with('success', 'Half-day extension added: the guest can stay until '.Reservation::halfDayUntil()
+            .' (+'.number_format($amount, 2).' ETB on the bill).');
     }
 
     /** Cancel, or mark no-show ("as=no_show"). */

@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" href="{{ asset('images/solkeb-icon-64.png') }}">
-<link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=14">
+<link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=17">
 <style>
     body { background: #fff; }
     .doc { max-width: 780px; margin: 1.5rem auto; padding: 0 1rem; }
@@ -14,4 +14,5 @@
     .sign div { flex: 1; border-top: 1px solid #94a3b8; padding-top: .3rem; font-size: .85rem; color: var(--muted); }
     .letter p { line-height: 1.65; }
     @media print { .doc { margin: 0 auto; } }
+        @media screen and (max-width: 640px) { .inv-head { flex-wrap: wrap; } .inv-meta { text-align: left; } .inv-parties .right { text-align: left; } table { display: block; overflow-x: auto; } .sign { flex-direction: column; gap: 2.5rem; } }
 </style>

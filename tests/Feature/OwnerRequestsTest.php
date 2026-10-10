@@ -50,10 +50,10 @@ class OwnerRequestsTest extends TestCase
         Cache::flush();
         $this->actingAs($this->staff('Hodan'));
 
-        $unicef = $this->book(['201', '202', '203'], '0911', ['first_name' => 'Amina', 'company' => 'UNICEF Jijiga']);
-        $unhcr = $this->book(['204', '205'], '0922', ['first_name' => 'Omar', 'company' => 'UNHCR']);
-        $single = $this->book(['101'], '0933', ['first_name' => 'Sara']);
-        $later = $this->book(['102'], '0944', ['first_name' => 'Dawit'], 3, 5);
+        $unicef = $this->book(['201', '202', '203'], '0911000011', ['first_name' => 'Amina', 'company' => 'UNICEF Jijiga']);
+        $unhcr = $this->book(['204', '205'], '0922000022', ['first_name' => 'Omar', 'company' => 'UNHCR']);
+        $single = $this->book(['101'], '0933000033', ['first_name' => 'Sara']);
+        $later = $this->book(['102'], '0944000044', ['first_name' => 'Dawit'], 3, 5);
 
         $this->assertNotNull($unicef->fresh()->group_color);
         $this->assertNotNull($unhcr->fresh()->group_color);
@@ -82,7 +82,7 @@ class OwnerRequestsTest extends TestCase
     {
         Cache::flush();
         $this->actingAs($this->staff('Hodan'));
-        $r = $this->book(['301', '302'], '0911', ['first_name' => 'Amina', 'company' => 'Save the Children']);
+        $r = $this->book(['301', '302'], '0911000011', ['first_name' => 'Amina', 'company' => 'Save the Children']);
         [$r301, $r302] = [Room::where('number', '301')->value('id'), Room::where('number', '302')->value('id')];
 
         $this->get("/reservations/{$r->id}")->assertSee('Room 301 · Deluxe')->assertSee('Room 302 · Deluxe')->assertSee('ID front (photo)');
@@ -101,8 +101,8 @@ class OwnerRequestsTest extends TestCase
 
         // Each room gets its own guest; the contact stays the booker and the bill's name
         $this->post("/reservations/{$r->id}/check-in", $this->checkInPayload($r, [
-            '301' => ['first_name' => 'Yusuf', 'father_name' => 'Ali', 'phone' => '0955', 'id_number' => 'FAN-1'],
-            '302' => ['first_name' => 'Hawa', 'phone' => '0966', 'id_type' => 'passport', 'id_number' => 'EP123'],
+            '301' => ['first_name' => 'Yusuf', 'father_name' => 'Ali', 'phone' => '0955000055', 'id_number' => 'FAN-1'],
+            '302' => ['first_name' => 'Hawa', 'phone' => '0966000066', 'id_type' => 'passport', 'id_number' => 'EP123'],
         ]))->assertSessionHas('success');
         $r->refresh();
         $this->assertEquals('checked_in', $r->status);
@@ -129,11 +129,11 @@ class OwnerRequestsTest extends TestCase
 
         // Returning guest: ID photos already saved, so none needed this time; passport needs no back photo
         $this->actingAs(User::where('name', 'Hodan')->first());
-        $again = $this->book(['303'], '0955', ['first_name' => 'Yusuf'], 3, 4);
+        $again = $this->book(['303'], '0955000055', ['first_name' => 'Yusuf'], 3, 4);
         $again->update(['check_in_date' => today(), 'check_out_date' => today()->addDay()]);
         $r303 = Room::where('number', '303')->value('id');
         $this->post("/reservations/{$again->id}/check-in", ['occupants' => [$r303 => [
-            'first_name' => 'Yusuf', 'phone' => '0955', 'id_type' => 'national_id', 'id_number' => 'FAN-1',
+            'first_name' => 'Yusuf', 'phone' => '0955000055', 'id_type' => 'national_id', 'id_number' => 'FAN-1',
         ]]])->assertSessionHasNoErrors()->assertSessionHas('success');
         $this->assertEquals(1, Guest::where('id_number', 'FAN-1')->count());
     }
@@ -145,7 +145,7 @@ class OwnerRequestsTest extends TestCase
         $acc = $this->staff('Meron', 'accountant');
 
         $this->actingAs($hodan);
-        $r = $this->book(['101'], '0911', ['first_name' => 'Ahmed'], 0, 2, ['deposit' => 1000, 'deposit_method' => 'cash']);
+        $r = $this->book(['101'], '0911000011', ['first_name' => 'Ahmed'], 0, 2, ['deposit' => 1000, 'deposit_method' => 'cash']);
         $this->actingAs($sara)->post("/reservations/{$r->id}/check-in", $this->checkInPayload($r))->assertSessionHas('success');
         $this->actingAs($abdi)->post("/reservations/{$r->id}/payments", ['amount' => 1500, 'method' => 'telebirr', 'type' => 'payment', 'reference' => 'TB1']);
         $this->travel(2)->days(); // a different receptionist, two days later
@@ -181,7 +181,7 @@ class OwnerRequestsTest extends TestCase
 
         // Receptionists cannot see the staff report, give refunds or discounts (even by sending the form by hand)
         $this->actingAs($sara)->get('/reports/staff')->assertForbidden();
-        $r2 = $this->actingAs($sara)->book(['102'], '0922', ['first_name' => 'Ali']);
+        $r2 = $this->actingAs($sara)->book(['102'], '0922000022', ['first_name' => 'Ali']);
         $this->actingAs($sara)->post("/reservations/{$r2->id}/payments", ['amount' => 100, 'method' => 'cash', 'type' => 'refund'])->assertForbidden();
         $this->actingAs($sara)->post("/reservations/{$r2->id}/charges", ['kind' => 'discount', 'description' => 'x', 'amount' => 100])->assertForbidden();
         $this->actingAs($acc)->post("/reservations/{$r2->id}/payments", ['amount' => 100, 'method' => 'cash', 'type' => 'refund'])->assertSessionHasNoErrors()->assertSessionHas('success');

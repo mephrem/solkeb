@@ -93,7 +93,7 @@ class SetupTest extends TestCase
         // Price change: existing bookings keep their rate
         $room = Room::where('number', '101')->first();
         $this->post('/reservations', ['check_in_date' => today()->toDateString(), 'check_out_date' => today()->addDay()->toDateString(),
-            'rooms' => [$room->id], 'adults' => 1, 'source' => 'walk_in', 'guest' => ['first_name' => 'A', 'phone' => '0911']]);
+            'rooms' => [$room->id], 'adults' => 1, 'source' => 'walk_in', 'guest' => ['first_name' => 'A', 'phone' => '0911000011']]);
         $std = $room->roomType;
         $this->put("/setup/room-types/{$std->id}", ['name' => 'Standard', 'base_rate' => 1700, 'max_adults' => 2, 'max_children' => 1, 'is_active' => 1]);
         $this->assertEquals(1500, Reservation::first()->rooms->first()->pivot->nightly_rate);

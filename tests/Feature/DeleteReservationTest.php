@@ -28,7 +28,7 @@ class DeleteReservationTest extends TestCase
     {
         $this->post('/reservations', ['check_in_date' => today()->addDays($in)->toDateString(), 'check_out_date' => today()->addDays($out)->toDateString(),
             'rooms' => [Room::where('number', $room)->value('id')], 'adults' => 1, 'source' => 'phone',
-            'guest' => ['first_name' => 'Abdi', 'phone' => '0911']] + $extra)->assertSessionHasNoErrors();
+            'guest' => ['first_name' => 'Abdi', 'phone' => '0911000011']] + $extra)->assertSessionHasNoErrors();
 
         return Reservation::latest('id')->first();
     }
@@ -80,7 +80,7 @@ class DeleteReservationTest extends TestCase
         $this->get('/reservations/deleted')->assertOk()->assertSee($dup->code)->assertSee('Manager Mo')->assertSee('15,000.00');
 
         // History guards still see it: guest, room and staff can't be deleted out from under the log
-        $lone = Guest::create(['first_name' => 'Solo', 'phone' => '0888']);
+        $lone = Guest::create(['first_name' => 'Solo', 'phone' => '0988000088']);
         $this->actingAs($rec);
         $solo = $this->book('104', 0, 1);
         $solo->update(['guest_id' => $lone->id]);

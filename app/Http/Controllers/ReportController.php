@@ -200,22 +200,44 @@ class ReportController extends Controller
                 'occupancy' => 0, 'room' => 0.0, 'other' => 0.0, 'collected' => 0.0];
         }
 
-        // Room revenue is earned night by night, at the rate locked in the booking
-        $stays = DB::table('reservation_room')
-            ->join('reservations', 'reservations.id', '=', 'reservation_room.reservation_id')
-            ->whereIn('reservations.status', ['checked_in', 'checked_out'])
+        // Room revenue is earned night by night, from the room lines on the bills: each line covers its own
+        // nights of the stay (a room move splits a stay into an old-room part and a new-room part)
+        $stays = DB::table('charges')
+            ->join('reservations', 'reservations.id', '=', 'charges.reservation_id')
+            ->where('charges.type', 'room')
+            ->whereIn('reservations.status', [Reservation::CHECKED_IN, Reservation::CHECKED_OUT])
             ->whereNull('reservations.deleted_at')
             ->whereDate('reservations.check_in_date', '<=', $lastNight)
             ->whereDate('reservations.check_out_date', '>', $from)
-            ->get(['reservations.check_in_date', 'reservations.check_out_date', 'reservation_room.nightly_rate']);
+            ->get(['reservations.check_in_date', 'charges.nights_before', 'charges.quantity', 'charges.unit_price']);
+
+        // Bookings with no room lines on the bill (older data): the whole stay at the price fixed when booking
+        $stays = $stays->concat(DB::table('reservation_room')
+            ->join('reservations', 'reservations.id', '=', 'reservation_room.reservation_id')
+            ->whereIn('reservations.status', [Reservation::CHECKED_IN, Reservation::CHECKED_OUT])
+            ->whereNull('reservations.deleted_at')
+            ->whereDate('reservations.check_in_date', '<=', $lastNight)
+            ->whereDate('reservations.check_out_date', '>', $from)
+            ->whereNotExists(fn ($q) => $q->from('charges')->whereColumn('charges.reservation_id', 'reservations.id')->where('charges.type', 'room'))
+            ->get(['reservations.check_in_date', 'reservations.check_out_date', 'reservation_room.nightly_rate'])
+            ->map(fn ($r) => (object) [
+                'check_in_date' => $r->check_in_date,
+                'nights_before' => 0,
+                'quantity' => max(1, Carbon::parse($r->check_in_date)->diffInDays(Carbon::parse($r->check_out_date))),
+                'unit_price' => $r->nightly_rate,
+            ]));
 
         foreach ($stays as $s) {
-            $night = Carbon::parse($s->check_in_date)->max($from)->copy();
-            $end = Carbon::parse($s->check_out_date)->subDay()->min($lastNight)->copy();
+            $first = Carbon::parse($s->check_in_date)->addDays((int) $s->nights_before);
+            $night = $first->copy()->max($from)->copy(); // copy: max() can return $from itself
+            $end = $first->copy()->addDays((int) $s->quantity - 1)->min($lastNight)->copy();
             for (; $night->lte($end); $night->addDay()) {
                 $key = $night->toDateString();
+                if (! isset($days[$key])) {
+                    continue;
+                }
                 $days[$key]['sold']++;
-                $days[$key]['room'] += (float) $s->nightly_rate;
+                $days[$key]['room'] += (float) $s->unit_price;
             }
         }
 
@@ -232,6 +254,7 @@ class ReportController extends Controller
             $days[$key]['other'] += (float) $c->amount;
             $label = match (true) {
                 $c->type === 'discount' => 'Discounts',
+                $c->type === 'half_day' => 'Half-day extensions',
                 $c->category !== null => ServiceController::CATEGORIES[$c->category] ?? ucfirst($c->category),
                 default => 'Other charges',
             };

@@ -57,6 +57,41 @@
     </div>
 </div>
 
+{{-- Check-out day: check-out time, and the half-day extension (late check-out) --}}
+@if ($frontDesk && $r->status === 'checked_in' && $r->check_out_date->isToday())
+    @php
+        $until = \App\Models\Reservation::halfDayUntil();
+        $pct = \App\Models\Reservation::halfDayPercent();
+        $halfDone = $r->halfDayRoomIds();
+        $halfLeft = $r->rooms->reject(fn ($room) => $halfDone->contains($room->id));
+        $halfPrice = $halfLeft->sum(fn ($room) => round($room->pivot->nightly_rate * $pct / 100, 2));
+    @endphp
+    <div class="card" style="border-left:4px solid var(--amber)">
+        <div class="card-head"><h2>Leaving today</h2>
+            <span class="small muted">check-out time {{ \App\Models\Reservation::checkOutTime() }} · half day until {{ $until }}</span></div>
+        @if ($halfLeft->isEmpty())
+            <p style="margin:0"><strong>Half-day extension added:</strong> the guest can stay until <strong>{{ $until }}</strong>.
+                If they stay the night instead, use <a href="{{ route('reservations.edit', $r) }}">Extend / change stay</a>: the full night replaces the half day.</p>
+        @else
+            <p class="small muted" style="margin-top:0">Guest staying after {{ \App\Models\Reservation::checkOutTime() }}? Add a half-day extension: they keep the room until {{ $until }} for {{ rtrim(rtrim(number_format($pct, 2), '0'), '.') }}% of one night's price.</p>
+            <form method="POST" action="{{ route('reservations.half-day', $r) }}"
+                  data-confirm-title="Half-day extension until {{ $until }}?"
+                  data-confirm="{{ number_format($halfPrice, 2) }} ETB will be added to the bill for room {{ $halfLeft->pluck('number')->join(', ') }}."
+                  data-confirm-button="Add half day">
+                @csrf
+                @if ($r->rooms->count() > 1)
+                    <div class="actions" style="margin-bottom:.6rem">
+                        @foreach ($halfLeft as $room)
+                            <label class="check small"><input type="checkbox" name="rooms[]" value="{{ $room->id }}" checked> Room {{ $room->number }} · {{ number_format(round($room->pivot->nightly_rate * $pct / 100, 2), 2) }} ETB</label>
+                        @endforeach
+                    </div>
+                @endif
+                <button class="btn btn-sm" type="submit">Half-day extension until {{ $until }} (+{{ number_format($halfPrice, 2) }} ETB)</button>
+            </form>
+        @endif
+    </div>
+@endif
+
 @if ($r->on_credit && $r->organization && $r->status === 'checked_out' && $balance > 0.009)
     <div class="alert alert-error" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
         <span><strong>On credit:</strong> {{ $r->organization->name }} owes <strong>{{ number_format($balance, 2) }} ETB</strong>
@@ -326,6 +361,39 @@
                     @if ($occ && $group)
                         <div class="small"><a href="{{ route('guests.show', $occ) }}">{{ $occ->full_name }}</a> · {{ $occ->phone }}</div>
                         @include('partials.id-photos', ['guest' => $occ])
+                    @endif
+                    @if ($frontDesk && $r->status === 'checked_in')
+                        {{-- Room shifting: only rooms free for the rest of the stay are offered --}}
+                        <details class="move-room" @if ($errors->hasAny(['to_room_id', 'reason']) && (int) old('from_room') === $room->id) open @endif>
+                            <summary class="small">Move to another room</summary>
+                            @if ($moveTo->isEmpty())
+                                <p class="small muted">{{ $r->check_out_date->isAfter(today()) ? 'No room is free for the rest of this stay.' : 'The stay ends today: extend it first to move the room.' }}</p>
+                            @else
+                                <form method="POST" action="{{ route('reservations.move-room', [$r, $room]) }}" style="margin-top:.5rem"
+                                      data-confirm-title="Move out of room {{ $room->number }}?"
+                                      data-confirm="The guest moves to the room you chose. Room {{ $room->number }} will be marked 'Needs cleaning'. The nights left go on the bill for the new room."
+                                      data-confirm-button="Move room">
+                                    @csrf
+                                    <input type="hidden" name="from_room" value="{{ $room->id }}">
+                                    <div class="field"><label>New room</label>
+                                        <select name="to_room_id" required>
+                                            <option value="">— Choose —</option>
+                                            @foreach ($moveTo->groupBy(fn ($m) => $m->roomType->name) as $type => $list)
+                                                <optgroup label="{{ $type }}">
+                                                    @foreach ($list as $m)<option value="{{ $m->id }}" @selected((string) old('to_room_id') === (string) $m->id)>{{ $m->number }} · {{ number_format($m->rate()) }} ETB a night{{ $m->housekeeping_status === 'dirty' ? ' · needs cleaning' : '' }}</option>@endforeach
+                                                </optgroup>
+                                            @endforeach
+                                        </select>
+                                        @error('to_room_id')<div class="error-text">{{ $message }}</div>@enderror</div>
+                                    <div class="field"><label>Reason</label>
+                                        <input type="text" name="reason" value="{{ old('reason') }}" maxlength="200" placeholder="e.g. AC not working, guest asked for a quieter room" required>
+                                        @error('reason')<div class="error-text">{{ $message }}</div>@enderror</div>
+                                    <label class="check small"><input type="checkbox" name="keep_price" value="1" @checked(old('keep_price'))> Keep the old price ({{ number_format($room->pivot->nightly_rate) }} ETB a night)</label>
+                                    <p class="small muted" style="margin:.3rem 0 .6rem">Otherwise the nights left are charged at the new room's price.</p>
+                                    <button class="btn btn-sm" type="submit">Move room</button>
+                                </form>
+                            @endif
+                        </details>
                     @endif
                 </div>
             @endforeach

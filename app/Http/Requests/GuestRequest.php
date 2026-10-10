@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Guest;
+use App\Rules\PhoneNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,6 +17,9 @@ class GuestRequest extends FormRequest
     {
         if ($this->has('tin')) {
             $this->merge(['tin' => self::cleanTin($this->input('tin'))]);
+        }
+        if ($this->has('phone')) {
+            $this->merge(['phone' => PhoneNumber::normalize($this->input('phone'))]);
         }
     }
 
@@ -60,7 +64,7 @@ class GuestRequest extends FormRequest
             $prefix.'father_name' => ['nullable', 'string', 'max:100'],
             $prefix.'grandfather_name' => ['nullable', 'string', 'max:100'],
             $prefix.'gender' => ['nullable', Rule::in(['male', 'female'])],
-            $prefix.'phone' => ['required', 'string', 'max:20'],
+            $prefix.'phone' => ['required', 'string', 'max:20', new PhoneNumber],
             $prefix.'email' => ['nullable', 'email', 'max:150'],
             $prefix.'nationality' => ['nullable', 'string', 'max:60'],
             $prefix.'id_type' => ['nullable', Rule::in(array_keys(Guest::ID_TYPES))],

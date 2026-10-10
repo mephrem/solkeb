@@ -21,7 +21,7 @@ class OrganizationPaymentTest extends TestCase
         $this->post('/reservations', [
             'check_in_date' => today()->toDateString(), 'check_out_date' => today()->addDay()->toDateString(),
             'rooms' => [Room::where('number', $room)->value('id')], 'adults' => 1, 'source' => 'corporate',
-            'guest' => ['first_name' => $name, 'phone' => '0911'.$room.'00'], 'organization_id' => $org->id, 'on_credit' => 1,
+            'guest' => ['first_name' => $name, 'phone' => '0911'.$room.'000'], 'organization_id' => $org->id, 'on_credit' => 1,
         ])->assertSessionHasNoErrors();
         $r = Reservation::latest('id')->first();
         $this->post("/reservations/{$r->id}/check-in", $this->checkInPayload($r))->assertSessionHas('success');

@@ -6,6 +6,7 @@ use App\Exceptions\BookingException;
 use App\Models\Guest;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Rules\PhoneNumber;
 use App\Services\Booking\CheckInService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
@@ -30,6 +31,14 @@ class CheckInRequest extends FormRequest
         if ($this->arriving()->isEmpty()) {
             throw new BookingException('No room is marked as arrived. If nobody came, use No-show instead.');
         }
+
+        $occupants = $this->input('occupants', []);
+        foreach ($occupants as $roomId => $o) {
+            if (is_array($o) && array_key_exists('phone', $o)) {
+                $occupants[$roomId]['phone'] = PhoneNumber::normalize($o['phone']);
+            }
+        }
+        $this->merge(['occupants' => $occupants]);
     }
 
     public function rules(): array
@@ -40,7 +49,7 @@ class CheckInRequest extends FormRequest
             $rules += [
                 $p.'first_name' => ['required', 'string', 'max:100'],
                 $p.'father_name' => ['nullable', 'string', 'max:100'],
-                $p.'phone' => ['required', 'string', 'max:20'],
+                $p.'phone' => ['required', 'string', 'max:20', new PhoneNumber],
                 $p.'id_type' => ['required', Rule::in(array_keys(Guest::ID_TYPES))],
                 $p.'id_number' => ['required', 'string', 'max:50'],
                 $p.'id_front' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:8192'],

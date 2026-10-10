@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/reservations/{reservation}', [ReservationController::class, 'update'])->name('reservations.update');
         Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn'])->name('reservations.check-in');
         Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut'])->name('reservations.check-out');
+        Route::post('/reservations/{reservation}/rooms/{room}/move', [ReservationController::class, 'moveRoom'])->name('reservations.move-room');
+        Route::post('/reservations/{reservation}/half-day', [ReservationController::class, 'halfDay'])->name('reservations.half-day');
         Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel'])->name('reservations.cancel');
         Route::post('/reservations/{reservation}/charges', [ChargeController::class, 'store'])->name('charges.store');
 

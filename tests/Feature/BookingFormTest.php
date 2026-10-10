@@ -29,7 +29,7 @@ class BookingFormTest extends TestCase
         $this->assertTrue(strpos($page, '<h2>Guest</h2>') < strpos($page, 'Stay details'));
 
         // An older guest whose nationality is not in the list keeps it
-        $g = Guest::create(['first_name' => 'Old', 'phone' => '0911', 'nationality' => 'Somali']);
+        $g = Guest::create(['first_name' => 'Old', 'phone' => '0911000011', 'nationality' => 'Somali']);
         $this->get("/guests/{$g->id}/edit")->assertSee('<option value="Somali" selected>', false);
     }
 }

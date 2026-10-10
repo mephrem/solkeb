@@ -24,7 +24,7 @@ class ReportTest extends TestCase
         $rec = User::create(['name' => 'Hodan', 'email' => 'h@x.com', 'password' => 'secret123', 'role' => 'receptionist']);
 
         // Stay 1: Deluxe 2500 x 3 nights, 18th-21st (checked out on 21st)
-        $g = Guest::create(['first_name' => 'Abdi', 'phone' => '0911']);
+        $g = Guest::create(['first_name' => 'Abdi', 'phone' => '0911000011']);
         $r1 = Reservation::create(['guest_id' => $g->id, 'check_in_date' => '2026-09-18', 'check_out_date' => '2026-09-21',
             'status' => 'checked_out', 'checked_in_at' => '2026-09-18 14:00', 'checked_out_at' => '2026-09-21 11:00']);
         $r1->rooms()->attach(Room::where('number', '301')->value('id'), ['nightly_rate' => 2500]);
@@ -35,7 +35,7 @@ class ReportTest extends TestCase
         $r1->payments()->create(['amount' => 500, 'method' => 'cash', 'type' => 'refund', 'paid_at' => '2026-09-20 09:40', 'received_by' => $admin->id]);
 
         // Stay 2: in house, Standard 1500, 19th -> 23rd; only nights up to today (20th) count
-        $g2 = Guest::create(['first_name' => 'Hodan', 'phone' => '0922']);
+        $g2 = Guest::create(['first_name' => 'Hodan', 'phone' => '0922000022']);
         $r2 = Reservation::create(['guest_id' => $g2->id, 'check_in_date' => '2026-09-19', 'check_out_date' => '2026-09-23',
             'status' => 'checked_in', 'checked_in_at' => '2026-09-19 15:00']);
         $r2->rooms()->attach(Room::where('number', '101')->value('id'), ['nightly_rate' => 1500]);

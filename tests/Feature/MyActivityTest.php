@@ -25,7 +25,7 @@ class MyActivityTest extends TestCase
         $this->post('/reservations', [
             'check_in_date' => today()->toDateString(), 'check_out_date' => today()->addDay()->toDateString(),
             'rooms' => [Room::where('number', $room)->value('id')], 'adults' => 1, 'source' => 'walk_in',
-            'guest' => ['first_name' => $guest, 'phone' => '0911'.$room],
+            'guest' => ['first_name' => $guest, 'phone' => '0911'.$room.'000'],
         ])->assertSessionHasNoErrors();
 
         return Reservation::latest('id')->first();

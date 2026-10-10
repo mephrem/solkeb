@@ -2,19 +2,27 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\PhoneNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /** Add / edit an organisation, including whether it may pay on credit. */
 class OrganizationRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('phone')) {
+            $this->merge(['phone' => PhoneNumber::normalize($this->input('phone'))]);
+        }
+    }
+
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:150', Rule::unique('organizations', 'name')->ignore($this->route('organization'))],
             'contact_person' => ['nullable', 'string', 'max:100'],
             'contact_title' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:50', new PhoneNumber(landline: true)],
             'email' => ['nullable', 'email', 'max:150'],
             'address' => ['nullable', 'string', 'max:200'],
             'tin' => ['nullable', 'string', 'max:20'],

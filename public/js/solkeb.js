@@ -305,6 +305,50 @@
         });
     }
 
-    function init() { showFlash(); tooltips(); }
+    // ---- Phone / tablet menu: the sidebar slides in; tap outside it or press Esc to close ----------
+    function menu() {
+        var button = document.querySelector('[data-menu-toggle]');
+        var sidebar = document.getElementById('sidebar');
+        if (!button || !sidebar) return;
+        function set(open) {
+            sidebar.classList.toggle('open', open);
+            document.body.classList.toggle('menu-open', open);
+            button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        button.addEventListener('click', function (e) { e.stopPropagation(); set(!sidebar.classList.contains('open')); });
+        document.addEventListener('click', function (e) {
+            if (sidebar.classList.contains('open') && !sidebar.contains(e.target)) set(false);
+        });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+    }
+
+    // ---- Tables on phones: each row becomes a card, each cell shows its column name ----------------
+    // Cells get data-label="<column heading>"; the CSS (max-width 640px) shows it before the value.
+    function labelTables() {
+        document.querySelectorAll('table').forEach(function (table) {
+            var head = table.tHead ? table.tHead.rows[0] : null;
+            if (!head || table.classList.contains('no-stack')) return;
+            var names = Array.prototype.map.call(head.cells, function (th) { return th.textContent.replace(/\s+/g, ' ').trim(); });
+            table.classList.add('stack');
+            Array.prototype.forEach.call(table.tBodies, function (tbody) {
+                Array.prototype.forEach.call(tbody.rows, function (tr) {
+                    var col = 0;
+                    Array.prototype.forEach.call(tr.cells, function (td) {
+                        if (names[col] && !td.hasAttribute('data-label')) {
+                            td.setAttribute('data-label', names[col]);
+                            // keep the cell's content together as one block beside its label
+                            var box = document.createElement('div');
+                            box.className = 'cell';
+                            while (td.firstChild) box.appendChild(td.firstChild);
+                            td.appendChild(box);
+                        }
+                        col += td.colSpan || 1;
+                    });
+                });
+            });
+        });
+    }
+
+    function init() { showFlash(); tooltips(); menu(); labelTables(); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

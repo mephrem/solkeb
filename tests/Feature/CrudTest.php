@@ -18,7 +18,7 @@ class CrudTest extends TestCase
 
     protected $seed = true;
 
-    private function book(string $room, int $in, int $out, string $phone = '0911'): Reservation
+    private function book(string $room, int $in, int $out, string $phone = '0911000011'): Reservation
     {
         $this->post('/reservations', ['check_in_date' => today()->addDays($in)->toDateString(), 'check_out_date' => today()->addDays($out)->toDateString(),
             'rooms' => [Room::where('number', $room)->value('id')], 'adults' => 1, 'source' => 'phone',
@@ -56,7 +56,7 @@ class CrudTest extends TestCase
 
         // Guest with bookings: blocked; without: deleted
         $this->delete("/guests/{$r->guest_id}")->assertSessionHas('error');
-        $lone = Guest::create(['first_name' => 'Lone', 'phone' => '0999']);
+        $lone = Guest::create(['first_name' => 'Lone', 'phone' => '0999000099']);
         $this->delete("/guests/{$lone->id}")->assertRedirect('/guests');
         $this->assertNull(Guest::find($lone->id));
 
@@ -77,7 +77,7 @@ class CrudTest extends TestCase
         $this->actingAs(User::where('email', 'admin@solkebhotel.com')->first());
 
         $a = $this->book('101', 1, 3);                // 101 booked tomorrow for 2 nights
-        $this->book('102', 3, 5, '0922');             // 102 taken later
+        $this->book('102', 3, 5, '0922000022');             // 102 taken later
 
         $this->get("/reservations/{$a->id}/edit")->assertOk()->assertSee('booked rate');
 
@@ -95,13 +95,13 @@ class CrudTest extends TestCase
         $this->assertEquals(['101' => 1500.0, '103' => 1900.0], $a->rooms->mapWithKeys(fn ($r) => [$r->number => (float) $r->pivot->nightly_rate])->all());
 
         // In-house guest extends: room nights re-billed
-        $b = $this->book('201', 0, 2, '0933');
+        $b = $this->book('201', 0, 2, '0933000033');
         $this->post("/reservations/{$b->id}/check-in", $this->checkInPayload($b));
         $this->assertEquals(3800, $b->fresh()->totalCharges()); // Standard now 1,900 x 2
         $this->put("/reservations/{$b->id}", ['check_out_date' => today()->addDays(4)->toDateString(), 'adults' => 1, 'source' => 'walk_in'])->assertSessionHas('success');
         $this->assertEquals(7600, $b->fresh()->totalCharges());
         // Extension that runs into another booking is refused
-        $this->book('201', 5, 6, '0944');
+        $this->book('201', 5, 6, '0944000044');
         $this->put("/reservations/{$b->id}", ['check_out_date' => today()->addDays(7)->toDateString(), 'adults' => 1, 'source' => 'walk_in'])->assertSessionHas('error');
         $this->assertEquals(7600, $b->fresh()->totalCharges());
 

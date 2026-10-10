@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Rules\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -26,6 +27,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['phone' => PhoneNumber::normalize($request->input('phone'))]);
         $data = $request->validate($this->rules() + [
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
@@ -43,6 +45,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $request->merge(['phone' => PhoneNumber::normalize($request->input('phone'))]);
         $data = $request->validate($this->rules($user) + [
             'password' => ['nullable', 'confirmed', Password::min(8)],
         ]);
@@ -88,7 +91,7 @@ class UserController extends Controller
         return [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user?->id)],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:20', new PhoneNumber],
             'role' => ['required', Rule::in(User::ROLES)],
             'is_active' => ['nullable', 'boolean'],
         ];

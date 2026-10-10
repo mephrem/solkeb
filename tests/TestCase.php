@@ -22,7 +22,7 @@ abstract class TestCase extends BaseTestCase
         foreach ($r->rooms()->get() as $i => $room) {
             $occupants[$room->id] = ($overrides[$room->number] ?? []) + [
                 'first_name' => $i === 0 ? $r->guest->first_name : 'Guest'.$room->number,
-                'phone' => $i === 0 ? $r->guest->phone : '09000'.$room->number,
+                'phone' => $i === 0 ? $r->guest->phone : '09000'.$room->number.'00',
                 'id_type' => 'national_id',
                 'id_number' => $i === 0 ? ($r->guest->id_number ?: 'ID-'.$r->guest->id) : 'ID-R'.$room->number,
                 'id_front' => UploadedFile::fake()->image("front{$room->number}.jpg", 800, 500),

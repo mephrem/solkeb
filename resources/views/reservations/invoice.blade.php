@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" href="{{ asset('images/solkeb-icon-64.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/solkeb-icon-180.png') }}">
     <title>Bill {{ $r->code }}</title>
-    <link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=14">
+    <link rel="stylesheet" href="{{ asset('css/solkeb.css') }}?v=17">
     <style>
         body { background: #fff; }
         .invoice { max-width: 780px; margin: 1.5rem auto; padding: 0 1rem; }
@@ -16,6 +16,7 @@
         .inv-parties { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
         .sign { display: flex; justify-content: space-between; margin-top: 3rem; gap: 2rem; }
         .sign div { flex: 1; border-top: 1px solid #94a3b8; padding-top: .3rem; font-size: .85rem; color: var(--muted); }
+        @media screen and (max-width: 640px) { .inv-head { flex-wrap: wrap; } .inv-meta { text-align: left; } .inv-parties .right { text-align: left; } table { display: block; overflow-x: auto; } .sign { flex-direction: column; gap: 2.5rem; } }
     </style>
 </head>
 <body>

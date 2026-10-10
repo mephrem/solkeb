@@ -17,6 +17,8 @@ class Activity extends Model
     public const LABELS = [
         'reserved' => 'Reserved',
         'edited' => 'Changed booking',
+        'room_moved' => 'Moved room',
+        'half_day' => 'Half-day extension',
         'checked_in' => 'Checked in',
         'checked_out' => 'Checked out',
         'payment' => 'Received payment',
