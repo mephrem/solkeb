@@ -20,21 +20,23 @@ if errorlevel 1 (
 )
 
 set "LARAGON=C:\laragon"
-pushd "%~dp0.." & set "APP=%CD%" & popd
+rem (separate lines: on one line Windows would read %CD% before moving into the folder)
+pushd "%~dp0.."
+set "APP=%CD%"
+popd
 set "APPF=%APP:\=/%"
 
-rem --- Find Laragon's MySQL 8 and Apache folders (the newest one of each) ---
+rem --- Find the MySQL and Apache that Laragon is set up to use ---
+rem MySQL: the version folder with Laragon's my.ini. Apache: the one whose httpd.conf loads Laragon's sites.
 set "MYSQL="
-for /d %%D in ("%LARAGON%\bin\mysql\mysql-8*") do set "MYSQL=%%D"
+for /d %%D in ("%LARAGON%\bin\mysql\mysql-8*") do if exist "%%D\my.ini" set "MYSQL=%%D"
 set "APACHE="
-for /d %%D in ("%LARAGON%\bin\apache\httpd-*") do set "APACHE=%%D"
-
-if not defined MYSQL  ( echo MySQL 8 was not found in %LARAGON%\bin\mysql.  & pause & exit /b 1 )
-if not defined APACHE ( echo Apache was not found in %LARAGON%\bin\apache. & pause & exit /b 1 )
-if not exist "%MYSQL%\my.ini" (
-  echo %MYSQL%\my.ini is missing. Open Laragon, click "Start All", then "Stop All", and run this again.
-  pause & exit /b 1
+for /d %%D in ("%LARAGON%\bin\apache\httpd-*") do (
+  if exist "%%D\conf\httpd.conf" findstr /c:"sites-enabled" "%%D\conf\httpd.conf" >nul && set "APACHE=%%D"
 )
+
+if not defined MYSQL  ( echo No set-up MySQL 8 found. Open Laragon, click "Start All", then "Stop All", and run this again. & pause & exit /b 1 )
+if not defined APACHE ( echo No set-up Apache found. Open Laragon, click "Start All", then "Stop All", and run this again. & pause & exit /b 1 )
 echo App:    %APP%
 echo MySQL:  %MYSQL%
 echo Apache: %APACHE%

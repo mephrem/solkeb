@@ -22,7 +22,7 @@ for /f "usebackq tokens=1,* delims==" %%A in ("%APP%\.env") do (
 if not defined DBUSER set "DBUSER=root"
 
 set "MYSQL="
-for /d %%D in ("%LARAGON%\bin\mysql\mysql-8*") do set "MYSQL=%%D"
+for /d %%D in ("%LARAGON%\bin\mysql\mysql-8*") do if exist "%%D\my.ini" set "MYSQL=%%D"
 
 for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "STAMP=%%T"
 set "OUT=%BACKUP_DIR%\%STAMP%"
